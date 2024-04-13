@@ -142,3 +142,14 @@ resource "aws_instance" "web_server" {
     Name = "Ubuntu EC2 Server"
   }
 }
+
+resource "aws_instance" "web" {
+  ami                    = "ami-0035ee596a0a12a7b"
+  instance_type          = "t2.micro"
+  subnet_id              = "subnet-069c8be2b9debfaf9"
+  vpc_security_group_ids = ["sg-0679aaf2ef2782f39"]
+
+  tags = {
+    "GumGum" = "grape"
+  }
+}
