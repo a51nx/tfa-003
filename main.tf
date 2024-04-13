@@ -143,13 +143,57 @@ resource "aws_instance" "web_server" {
   }
 }
 
-resource "aws_instance" "web" {
-  ami                    = "ami-0035ee596a0a12a7b"
-  instance_type          = "t2.micro"
-  subnet_id              = "subnet-069c8be2b9debfaf9"
-  vpc_security_group_ids = ["sg-0679aaf2ef2782f39"]
+# resource "aws_instance" "web" {
+#   ami                    = "ami-0035ee596a0a12a7b"
+#   instance_type          = "t2.micro"
+#   subnet_id              = "subnet-069c8be2b9debfaf9"
+#   vpc_security_group_ids = ["sg-0679aaf2ef2782f39"]
+
+#   tags = {
+#     "GumGum" = "grape"
+#   }
+# }
+
+# Resource block - adds new S3 bucket
+resource "aws_s3_bucket" "my-new-S3-bucket" {
+  #name of the bucket inside AWS - S3 bucket names have to be globally unique
+  bucket = "my-new-tf-test-bucket-${random_id.randomness.hex}"
 
   tags = {
-    "GumGum" = "grape"
+    Name    = "My S3 Bucket"
+    Purpose = "Intro to Resource Blocks Lab"
   }
+}
+
+resource "aws_s3_bucket_ownership_controls" "my_new_bucket_acl" {
+  bucket = aws_s3_bucket.my-new-S3-bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+# Resource block - adds new sg
+resource "aws_security_group" "my-new-security-group" {
+  name        = "web_server_inbound"
+  description = "Allow inbound traffic on tcp/443"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    description = "Allow 443 from the Internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name    = "web_server_inbound"
+    Purpose = "Intro to Resource Blocks Lab"
+  }
+}
+
+# This resource block is from the random provider
+# we can use this random string for our s3 bucket since it's probably unique!
+resource "random_id" "randomness" {
+  byte_length = 16
 }
