@@ -17,9 +17,27 @@ data "aws_region" "current" {}
 locals {
   team        = "api_mgmt_dev"
   application = "corp_api"
-  server_name = "ec2-${var.environment}-${var.variables_sub_az}"
+  server_name = "ec2-${var.environment}-api-${var.variables_sub_az}"
 }
 
+locals {
+  service_name = "Automation"
+  app_team     = "Cloud Team"
+  createdby    = "terraform"
+}
+
+locals {
+  # Common tags 
+  common_tags = {
+    Name      = local.server_name
+    Owner     = local.team
+    App       = local.application
+    Service   = local.service_name
+    AppTeam   = local.app_team
+    CreatedBy = local.createdby
+
+  }
+}
 #Define the VPC 
 resource "aws_vpc" "vpc" {
   cidr_block = var.vpc_cidr
@@ -310,9 +328,7 @@ resource "aws_instance" "web_server" {
     ]
   }
 
-  tags = {
-    Name = "Web EC2 Server"
-  }
+  tags = local.common_tags
 
   lifecycle {
     ignore_changes = [security_groups]
@@ -374,22 +390,27 @@ module "autoscaling" {
 }
 
 
-output "public_ip" {
-  value = module.server.public_ip
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = "my-vpc-terraform"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+  enable_vpn_gateway = true
+
+  tags = {
+    Name        = "VPC from Module"
+    Terraform   = "true"
+    Environment = "dev"
+  }
 }
 
-output "public_dns" {
-  value = module.server.public_dns
-}
-
-output "public_ip_server_subnet_1" {
-  value = module.server_subnet_1.public_ip
-}
-
-output "public_dns_server_subnet_1" {
-  value = module.server_subnet_1.public_dns
-}
-
-output "asg_group_size" {
-  value = module.autoscaling.autoscaling_group_max_size
+output "phone_number" {
+  value     = var.phone_number
+  sensitive = true
 }
